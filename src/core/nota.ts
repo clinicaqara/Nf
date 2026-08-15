@@ -37,7 +37,17 @@ export type Tomador = z.infer<typeof TomadorSchema>;
 
 export interface Nota {
   empresa: EmpresaSlug;
-  /** Data do atendimento, formato DD/MM/AAAA — é o que o portal chama de "Data de competência" no Passo 1. */
+  /**
+   * Data do atendimento, formato DD/MM/AAAA — entra só no texto da
+   * descrição do serviço ("Consulta realizada no dia DD/MM/AAAA").
+   *
+   * NÃO é a "Data de Competência" do Passo 1: essa é sempre a data de
+   * emissão (hoje), nunca retroativa, e é preenchida pelo driver no
+   * momento do envio — não vem da planilha nem fica congelada na nota.
+   * Retroagir a competência força reapuração fiscal e retrabalho na
+   * contabilidade, por isso o driver pede confirmação explícita se a
+   * emissão não acontecer no mesmo dia da montagem do lote.
+   */
   dataAtendimento: string;
   tomador: Tomador;
   servico: ServicoResolvido;

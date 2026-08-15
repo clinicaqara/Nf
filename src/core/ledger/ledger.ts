@@ -37,6 +37,8 @@ export interface RegistroLedger {
   erro: string | null;
   criadoEm: string;
   atualizadoEm: string;
+  /** Quando a nota virou "emitted" — é a competência real dela. Ao contrário de atualizado_em, não muda em transições depois disso (downloaded, cancelled...). */
+  emitidoEm: string | null;
 }
 
 interface RowNota {
@@ -54,6 +56,7 @@ interface RowNota {
   erro: string | null;
   criado_em: string;
   atualizado_em: string;
+  emitido_em: string | null;
 }
 
 function mapRow(row: RowNota): RegistroLedger {
@@ -72,6 +75,7 @@ function mapRow(row: RowNota): RegistroLedger {
     erro: row.erro,
     criadoEm: row.criado_em,
     atualizadoEm: row.atualizado_em,
+    emitidoEm: row.emitido_em,
   };
 }
 
@@ -131,7 +135,8 @@ export class Ledger {
         arquivos TEXT,
         erro TEXT,
         criado_em TEXT NOT NULL,
-        atualizado_em TEXT NOT NULL
+        atualizado_em TEXT NOT NULL,
+        emitido_em TEXT
       );
 
       CREATE UNIQUE INDEX IF NOT EXISTS idx_notas_hash_ativo
@@ -193,11 +198,12 @@ export class Ledger {
     return this.aplicarTransicao(id, 'in_progress', `UPDATE notas SET status = 'in_progress', atualizado_em = @agora WHERE id = @id`);
   }
 
+  /** `emitido_em` grava a competência real da nota (é sempre "hoje" no portal) e nunca é sobrescrito depois — diferente de atualizado_em. */
   marcarEmitida(id: number, chaveAcesso: string, numeroNota: string): RegistroLedger {
     return this.aplicarTransicao(
       id,
       'emitted',
-      `UPDATE notas SET status = 'emitted', chave_acesso = @chaveAcesso, numero_nota = @numeroNota, atualizado_em = @agora WHERE id = @id`,
+      `UPDATE notas SET status = 'emitted', chave_acesso = @chaveAcesso, numero_nota = @numeroNota, atualizado_em = @agora, emitido_em = @agora WHERE id = @id`,
       { chaveAcesso, numeroNota }
     );
   }

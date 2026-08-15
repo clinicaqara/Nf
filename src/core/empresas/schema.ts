@@ -16,6 +16,25 @@ export const EmpresaSchema = z.object({
     regimeApuracaoSN: z.string().optional(),
   }),
 
+  passo2: z.object({
+    municipioPrestacao: z.string().min(1),
+    codigoTributacaoNacional: z.string().min(1),
+    codigoTributacaoComplementar: z.string().min(1),
+    // IBS/CBS — Reforma Tributária, obrigatório desde 01/08/2026. Hoje é
+    // igual nas duas empresas (mesmo tipo de serviço, mesmo município), mas
+    // fica por empresa porque é exatamente esse tipo de campo que muda
+    // quando entrar uma terceira empresa ou um serviço de outra natureza.
+    ibsCbs: z.object({
+      preencher: z.boolean(),
+      compraGovernamental: z.boolean(),
+      destinatarioProprioAdquirente: z.boolean(),
+      itemNbs: z.string().min(1),
+      codigoIndicadorOperacao: z.string().min(1),
+      codigoSituacaoTributaria: z.string().min(1),
+      codigoClassificacaoTributaria: z.string().min(1),
+    }),
+  }),
+
   passo3: z.object({
     pisCofinsSituacaoTributaria: z.string().min(1),
     pisCofinsTipoRetencao: z.string().min(1),

@@ -54,8 +54,36 @@ forma. Vale medir isso cedo (Fase 3) para não construir em cima de uma hipótes
   `in_progress`. Se o processo morrer no meio, sobra rastro para conciliar,
   nunca um silêncio.
 - Chave natural anti-duplicidade: `cnpj_emitente + cpf_tomador +
-  data_competencia + codigo_servico + valor_centavos`. Repetiu, o comando
-  recusa e explica qual nota já existe.
+  data_atendimento + codigo_servico + valor_centavos`. Repetiu, o comando
+  recusa e explica qual nota já existe. É `data_atendimento` (o dia do
+  serviço), não competência — competência muda todo dia que a nota é retida
+  e reemitida, então não pode fazer parte de uma chave que precisa ser
+  estável (ver risco de competência logo abaixo).
+
+**Competência é sempre a data de emissão, nunca a do atendimento.** As skills
+atuais deixaram isso explícito e é fácil de errar: `dataAtendimento` na nota
+entra *só* no texto da descrição ("Consulta realizada no dia..."); o campo
+"Data de Competência" do Passo 1 é sempre o dia em que o comando roda,
+preenchido pelo driver na hora, nunca lido da planilha. Retroagir competência
+força reapuração do Simples Nacional e retrabalho na contabilidade — se um
+lote for montado numa data e só emitido dias depois, o driver assume hoje
+como competência de qualquer forma; se algum fluxo algum dia precisar de
+competência diferente de hoje, isso vira uma confirmação explícita, não um
+padrão silencioso. Consequência prática: `nf relatorio --competencia` filtra
+pelo mês do `emitido_em` do ledger (quando a nota de fato saiu), não pelo mês
+de `data_atendimento` — os dois podem cair em meses diferentes.
+
+**IBS/CBS (Reforma Tributária) — obrigatório desde 01/08/2026.** O Passo 2
+ganhou um bloco novo de campos fixos (preencher IBS/CBS = Sim, não é compra
+governamental, destinatário é o próprio adquirente, NBS 123012100 - Serviços
+de clínica médica, código indicador 030101, CST 000, classificação 000001;
+alíquotas de 0,01%/0,09% o próprio portal calcula). Hoje é idêntico nas duas
+empresas, por isso virou dado no `passo2.ibsCbs` do perfil de cada uma
+(seção 5) em vez de constante espalhada pelo driver. As próprias skills
+avisam que os `id`s desses campos **ainda não foram confirmados em produção**
+— é a primeira coisa a checar na Fase 4, e alguns são dropdown/radio
+estilizados que historicamente não respondem a `page.fill()`/JS puro (ver
+risco de seletores, abaixo — mesmo padrão de Município/Código/PIS-COFINS/Regime).
 
 **A sessão do gov.br expira rápido e o login não pode ser automatizado.**
 - O código nunca digita senha, nunca guarda senha. Isso é regra, não preferência.
@@ -139,6 +167,20 @@ entre as duas, e vira dado, não `if`:
   "razaoSocial": "QARA SERVICOS MEDICOS LTDA",
   "regime": "simples-nacional",
   "passo1": { "regimeApuracaoSN": "1" },
+  "passo2": {
+    "municipioPrestacao": "Rio de Janeiro/RJ",
+    "codigoTributacaoNacional": "04.01.01",
+    "codigoTributacaoComplementar": "04.01.01.001",
+    "ibsCbs": {
+      "preencher": true,
+      "compraGovernamental": false,
+      "destinatarioProprioAdquirente": true,
+      "itemNbs": "123012100",           // Serviços de clínica médica
+      "codigoIndicadorOperacao": "030101",
+      "codigoSituacaoTributaria": "000", // Tributação integral
+      "codigoClassificacaoTributaria": "000001"
+    }
+  },
   "passo3": {
     "pisCofinsSituacaoTributaria": "7",   // 07 Isenta
     "pisCofinsTipoRetencao": "0",         // Não retidos
@@ -149,7 +191,8 @@ entre as duas, e vira dado, não `if`:
 
 Ceccarelli difere em: sem regime SN no Passo 1, `issqnRegimeEspecial: "6"`
 (Sociedade de Profissionais), PIS/COFINS `"1"` (alíquota básica),
-`tipoValorTributos: "2"` com percentuais `11,33 / 0 / 0`.
+`tipoValorTributos: "2"` com percentuais `11,33 / 0 / 0`. O bloco `passo2`
+(município, código de tributação, IBS/CBS) é hoje idêntico ao da QARA.
 
 Empresa nova = um JSON. Nenhuma linha de código.
 
@@ -159,13 +202,19 @@ RQE de cada médico: uma errada é defeito em documento fiscal, então a
 renderização do template é função pura com teste unitário e os catálogos das
 duas empresas são conferidos contra as tabelas atuais antes de irem para o repo.
 
-**Nota** (a unidade de trabalho): empresa, competência, tomador (CPF, nome,
-CEP, número — ou um dos casos sem CPF: estrangeiro residente, turista,
-não informado), serviço (código do catálogo ou avulso), valor.
+**Nota** (a unidade de trabalho): empresa, data de atendimento (só entra na
+descrição do serviço — não é a competência), tomador (CPF, nome, CEP,
+número — ou um dos casos sem CPF: estrangeiro residente, turista, não
+informado), serviço (código do catálogo ou avulso), valor. Competência não é
+campo da nota: é sempre "hoje", calculada pelo driver na hora de preencher o
+Passo 1.
 
 **Ledger** (`data/ledger.db`, fora do git): `id`, `hash_natural`, `empresa`,
-`competencia`, `tomador_cpf`, `codigo_servico`, `valor_centavos`, `status`,
-`chave_acesso`, `numero_nota`, `emitido_em`, `arquivos`, `erro`.
+`data_atendimento`, `tomador_identificador`, `codigo_servico`,
+`valor_centavos`, `status`, `chave_acesso`, `numero_nota`, `emitido_em`,
+`arquivos`, `erro`. A competência de cada nota, para fins de relatório, é o
+mês de `emitido_em` — não existe coluna própria porque seria sempre igual à
+data de emissão, redundante por definição.
 Estados: `pending → in_progress → emitted → downloaded`, mais `failed`,
 `cancelled`, `substituted`.
 
@@ -188,6 +237,10 @@ nf substituir --chave <chave> --planilha corrigida.xlsx
 nf conciliar --competencia 2026-08  compara ledger × portal, aponta divergências
 nf relatorio --competencia 2026-08  XLSX por empresa para a contabilidade
 ```
+
+`--competencia` sempre filtra pelo mês de `emitido_em` no ledger — o dia em
+que a nota realmente saiu no portal, que é diferente de `data_atendimento`
+sempre que o lote é montado num dia e emitido depois.
 
 Formato da planilha (uma linha por nota, cabeçalho fixo — implementado na
 Fase 2 em `src/cli/planilha.ts`):
@@ -295,14 +348,23 @@ Coisas que eu não sei e não vou chutar:
 1. `page.click()` em "Avançar" trava a aba no Playwright, como trava no Chrome MCP?
 2. Quanto tempo a sessão do portal dura de fato? (define se o modo container é útil)
 3. A sessão exportada sobrevive a outro IP e outro fingerprint no container?
-4. Os IDs dos campos do Passo 2 (município e código de tributação são dropdowns
-   filtráveis) — as skills já indicam que podem não bater.
+4. Os IDs dos campos do Passo 2 são incertos por dois motivos empilhados:
+   Município/Código de tributação/PIS-COFINS/Regime já são dropdowns
+   filtráveis que historicamente não respondem a `setSel`/JS puro (as skills
+   caem para um fallback de UI — clicar, digitar, clicar); e os campos novos
+   de IBS/CBS (seção 3) são tão recentes que as próprias skills admitem não
+   ter os `id`s confirmados em produção ainda. A Fase 4 deve assumir que vai
+   precisar do fallback de UI nesses campos por padrão, não como exceção —
+   e o `nf doctor` (seção 3, risco de seletores) precisa cobrir especificamente
+   esse bloco.
 5. Regras atuais de cancelamento e substituição: prazo, motivo obrigatório,
    se substituição referencia a nota original.
-6. Os catálogos de serviço estão atualizados? Valores e RQE conferem?
+
+Resolvido: os catálogos de serviço (seção 5) foram conferidos contra a versão
+mais recente das skills `qara`/`cg` — valores, CRM e RQE batem, sem mudança.
 
 Saiu da lista: "o gov.br detecta automação?". O desenho por CDP no Chrome real
 torna a pergunta sem objeto — é o mesmo navegador que já emite nota hoje.
 
 A 1 sai da Fase 1; a 2 e a 3 saem da Fase 3 e decidem se o modo container fica
-de pé. As de 4 a 6 são para checar junto com a contabilidade antes da Fase 7.
+de pé. A 4 e a 5 são para checar na Fase 4/7 (a 5 junto com a contabilidade).

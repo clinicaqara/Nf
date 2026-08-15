@@ -56,6 +56,19 @@ describe('Ledger', () => {
     expect(baixada.arquivos).toEqual(['danfse.pdf']);
   });
 
+  it('preserva emitido_em nas transições seguintes (é a competência real, não pode se mover)', () => {
+    const registro = ledger.inserirPendente(notaExemplo());
+    ledger.marcarEmProgresso(registro.id);
+    const emitida = ledger.marcarEmitida(registro.id, 'CHAVE123', 'NF001');
+    expect(emitida.emitidoEm).not.toBeNull();
+
+    const baixada = ledger.marcarBaixada(registro.id, ['danfse.pdf']);
+    expect(baixada.emitidoEm).toBe(emitida.emitidoEm);
+
+    const cancelada = ledger.marcarCancelada(registro.id, 'pedido do paciente');
+    expect(cancelada.emitidoEm).toBe(emitida.emitidoEm);
+  });
+
   it('rejeita transição fora da máquina de estados', () => {
     const registro = ledger.inserirPendente(notaExemplo());
     // pending → emitted não é permitido, tem que passar por in_progress

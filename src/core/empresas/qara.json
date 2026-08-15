@@ -6,6 +6,20 @@
   "passo1": {
     "regimeApuracaoSN": "1"
   },
+  "passo2": {
+    "municipioPrestacao": "Rio de Janeiro/RJ",
+    "codigoTributacaoNacional": "04.01.01",
+    "codigoTributacaoComplementar": "04.01.01.001",
+    "ibsCbs": {
+      "preencher": true,
+      "compraGovernamental": false,
+      "destinatarioProprioAdquirente": true,
+      "itemNbs": "123012100",
+      "codigoIndicadorOperacao": "030101",
+      "codigoSituacaoTributaria": "000",
+      "codigoClassificacaoTributaria": "000001"
+    }
+  },
   "passo3": {
     "pisCofinsSituacaoTributaria": "7",
     "pisCofinsTipoRetencao": "0",
