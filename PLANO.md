@@ -25,7 +25,7 @@ a decisão continua humana.**
 
 | Decisão | Escolha |
 |---|---|
-| Onde o navegador roda | PC da clínica (perfil Chrome persistente) **e** container headless — a camada de sessão é plugável |
+| Onde o navegador roda | PC da clínica, anexando ao Chrome real por CDP (padrão) **e** container headless com sessão exportada — a camada de sessão é plugável |
 | Entrada de dados | Planilha XLSX/CSV para lote + comando interativo para nota avulsa |
 | Escopo do V1 | Emitir, baixar DANFSe/XML, cancelar/substituir, conciliar com o portal, relatório mensal |
 | Stack | TypeScript + Node 22, Playwright, zod, commander, better-sqlite3, exceljs, vitest |
@@ -37,6 +37,12 @@ Como a sessão do portal expira rápido, o modo container serve para lotes curto
 iniciados logo após um login, não para rodar sozinho de madrugada. Se a
 expectativa for emissão desassistida, o caminho não é browser harness — é a API
 oficial com certificado A1 (seção 10).
+
+Há um segundo limite no modo container que só o teste responde: a sessão sai de
+um Chrome logado na clínica e é injetada num navegador com outro IP e outro
+fingerprint. Se o gov.br amarrar a sessão a qualquer um dos dois, o modo
+container cai por terra e sobra o modo local — que é o principal de qualquer
+forma. Vale medir isso cedo (Fase 3) para não construir em cima de uma hipótese.
 
 ## 3. Riscos e como cada um é tratado
 
@@ -73,12 +79,30 @@ repositório: `data/`, `input/`, `downloads/` e `sessions/` no `.gitignore`
 desde o primeiro commit. CPF sai mascarado nos logs. Nenhum dado de paciente
 em mensagem de commit, em CI ou em issue.
 
-**O gov.br pode barrar um Chromium automatizado.** É a incógnita que pode
-custar mais tempo. Escada de mitigação, na ordem: (a) `channel: 'chrome'` com
-contexto persistente; (b) conectar por CDP ao Chrome real que a pessoa já usa
-(`--remote-debugging-port`), sem navegador lançado pelo script; (c) se nada
-funcionar, o login continua pela skill do Chrome MCP e só o preenchimento vira
-código. Isso é validado no spike da Fase 1, antes de qualquer outra coisa.
+**Detecção de automação — resolvido por desenho, não por teste.** O portal em
+si não resiste a automação: as skills injetam JS, clicam por código e preenchem
+campos com setter nativo todo dia, e funciona. Isso está provado em produção.
+
+O que *não* está provado é um Chromium lançado pelo Playwright passar pelo
+login do gov.br — porque nesse fluxo o login nunca foi automatizado (a pessoa
+loga na mão, no próprio Chrome) e porque um navegador lançado pelo script sobe
+com `navigator.webdriver = true` e perfil zerado, fingerprint diferente do que
+hoje funciona.
+
+Em vez de testar essa incógnita, o desenho a elimina: **o padrão é conectar por
+CDP ao Chrome que a pessoa já usa** (`chromium.connectOverCDP`), sem lançar
+navegador nenhum. Mesmo perfil, mesma sessão, mesmo fingerprint que já emite
+nota hoje — o login continua exatamente como é hoje, humano e no navegador de
+sempre. Só o preenchimento vira código.
+
+Detalhe que morde na hora de montar: desde o Chrome 136, `--remote-debugging-port`
+é recusado sobre o diretório de perfil padrão. Então o setup usa um
+`--user-data-dir` dedicado, onde a pessoa loga no gov.br uma vez; esse perfil
+persiste e vira dispositivo conhecido. É configuração de uma vez, num atalho.
+
+Alternativas, se o CDP não servir em alguma máquina: (b) contexto persistente
+com `channel: 'chrome'`; (c) login pela skill do Chrome MCP e só o
+preenchimento em código.
 
 ## 4. Arquitetura
 
@@ -175,13 +199,15 @@ navegador e recusa o lote com a lista de erros por linha.
 
 Cada fase termina em algo que roda. Nada de "infraestrutura" por três semanas.
 
-**Fase 1 — Spike de viabilidade (meio dia).** Antes de escrever o projeto:
-Playwright abre o portal com perfil persistente, a pessoa loga no gov.br, o
-script confirma que está logado e lê "Meus dados". Testa também as duas dúvidas
-técnicas: `page.click()` em "Avançar" funciona ou trava (as skills relatam
-travamento via Chrome MCP e usam clique por JS), e se `page.fill()` basta ou se
-o portal precisa do truque de setter nativo + eventos `input`/`change`.
-*Pronto quando:* sabemos se (a), (b) ou (c) da escada de mitigação é o caminho.
+**Fase 1 — Spike de conexão (1 hora).** Encolheu: como o padrão é atacar o
+Chrome que já funciona, não há viabilidade a descobrir, só a conexão a montar.
+Chrome sobe com `--remote-debugging-port` e `--user-data-dir` dedicado, a
+pessoa loga no gov.br nesse perfil, `connectOverCDP` anexa e lê "Meus dados".
+Testa de passagem as duas dúvidas mecânicas: `page.click()` em "Avançar"
+funciona ou trava (as skills relatam travamento e usam clique por JS), e se
+`page.fill()` basta ou se o portal precisa do setter nativo + eventos
+`input`/`change`. *Pronto quando:* o script enxerga a sessão logada e sabemos
+qual API de clique/preenchimento usar nas page objects.
 
 **Fase 2 — Esqueleto e domínio (1 dia).** Repo TS, lint, vitest, CI. `core`
 completo: perfis das duas empresas, catálogos, validação de nota, ledger
@@ -260,13 +286,16 @@ Também fora do V1: integração com o Kommo, emissão agendada desassistida
 Coisas que eu não sei e não vou chutar:
 
 1. `page.click()` em "Avançar" trava a aba no Playwright, como trava no Chrome MCP?
-2. O gov.br aceita um Chromium controlado por Playwright, ou detecta?
-3. Quanto tempo a sessão do portal dura de fato? (define se o modo container é útil)
+2. Quanto tempo a sessão do portal dura de fato? (define se o modo container é útil)
+3. A sessão exportada sobrevive a outro IP e outro fingerprint no container?
 4. Os IDs dos campos do Passo 2 (município e código de tributação são dropdowns
    filtráveis) — as skills já indicam que podem não bater.
 5. Regras atuais de cancelamento e substituição: prazo, motivo obrigatório,
    se substituição referencia a nota original.
 6. Os catálogos de serviço estão atualizados? Valores e RQE conferem?
 
-As respostas de 1 a 3 saem da Fase 1 e podem mudar a Fase 4. As de 4 a 6 são
-para checar junto com a contabilidade antes da Fase 7.
+Saiu da lista: "o gov.br detecta automação?". O desenho por CDP no Chrome real
+torna a pergunta sem objeto — é o mesmo navegador que já emite nota hoje.
+
+A 1 sai da Fase 1; a 2 e a 3 saem da Fase 3 e decidem se o modo container fica
+de pé. As de 4 a 6 são para checar junto com a contabilidade antes da Fase 7.
