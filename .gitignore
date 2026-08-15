@@ -1,0 +1,13 @@
+# Dados de paciente e sessão — nunca versionar (LGPD)
+data/
+input/
+downloads/
+sessions/
+*.db
+*.sqlite
+
+# Node
+node_modules/
+dist/
+.env
+.env.*
