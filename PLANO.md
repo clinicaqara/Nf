@@ -275,8 +275,14 @@ SQLite. Zero navegador. *Pronto quando:* `nf validar --planilha exemplo.xlsx`
 aponta erros linha a linha e os testes de catálogo/validação passam.
 
 **Fase 3 — Sessão (meio dia).** `auth login`, `auth status`, export/import de
-`storageState`, preflight. *Pronto quando:* logo na máquina da clínica, exporto
-a sessão, e um processo separado usa ela sem novo login.
+`storageState`, preflight (`garantirSessaoAtiva`). Escrita e testada aqui
+(mock de página para a detecção de login; round-trip real de cookies com o
+Chromium empacotado do Playwright, sem tocar o portal). O que só a máquina da
+clínica responde: quanto tempo a sessão dura de verdade, e se a sessão
+exportada sobrevive a rodar num Chromium diferente do que gerou (headless,
+outro fingerprint) — ver `docs/FASE1-SETUP.md` seção 7 e riscos #2/#3 da
+seção 11. *Pronto quando:* logo na máquina da clínica, exporto a sessão, e um
+processo separado usa ela sem novo login.
 
 **Fase 4 — Passos 1 a 4 e a primeira nota (2 dias).** Page objects dos quatro
 passos, mapa de seletores, `nf doctor`, dry-run com raspagem do resumo.
@@ -348,6 +354,8 @@ Coisas que eu não sei e não vou chutar:
 1. `page.click()` em "Avançar" trava a aba no Playwright, como trava no Chrome MCP?
 2. Quanto tempo a sessão do portal dura de fato? (define se o modo container é útil)
 3. A sessão exportada sobrevive a outro IP e outro fingerprint no container?
+   (2 e 3: ferramenta pronta — `nf auth status`/`nf auth login`, roteiro em
+   `docs/FASE1-SETUP.md` seção 7. Só falta rodar na máquina da clínica.)
 4. Os IDs dos campos do Passo 2 são incertos por dois motivos empilhados:
    Município/Código de tributação/PIS-COFINS/Regime já são dropdowns
    filtráveis que historicamente não respondem a `setSel`/JS puro (as skills

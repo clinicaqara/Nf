@@ -1,4 +1,4 @@
-# Fase 1 — rodar no PC da clínica
+# Fase 1 e 3 — rodar no PC da clínica
 
 Este passo tem que rodar numa máquina com tela e com o Chrome de verdade —
 não roda no container remoto. São ~10 minutos de setup + o script.
@@ -83,3 +83,49 @@ paciente se aparecer algum — não deveria, é só o Passo 1 sem dados reais).
 - **Chrome recusa abrir com o perfil**: já existe um Chrome comum rodando
   com o mesmo `--user-data-dir` default. Feche tudo (inclusive pela bandeja
   do sistema) e tente de novo.
+
+## 7. Fase 3 — sessão (`nf auth`)
+
+Com o Chrome do passo 2 aberto e você já logado (passo 3), o mesmo terminal
+do passo 4 roda:
+
+```
+npm run nf -- auth status
+```
+
+Deve imprimir `"logado": true` e, se o CNPJ aparecer na tela, o número dele.
+`exitCode` é `1` quando não está logado — dá pra usar isso como preflight
+antes de um lote, mais pra frente.
+
+Para gerar uma sessão exportável (usada pelo modo container — Fase 5 em
+diante), com o Chrome do passo 2 aberto e logado:
+
+```
+npm run nf -- auth login
+```
+
+Ele não pede pra você logar (login continua 100% manual, na janela do
+Chrome) — só fica checando a cada 2s até detectar que você já está logado, e
+então salva a sessão em `sessions/storage-state.json` (permissão 600, fora
+do git). Timeout padrão de 5 minutos (`--timeout <segundos>` para mudar).
+
+Depois de gerado, confira que o arquivo exportado também é reconhecido como
+sessão válida, sem precisar do Chrome aberto:
+
+```
+npm run nf -- auth status --storage-state sessions/storage-state.json
+```
+
+Isso abre um Chromium próprio (headless, baixado pelo Playwright) com a
+sessão importada e navega até o portal — é o mesmo mecanismo que o modo
+container vai usar para emitir.
+
+### O que registrar de volta
+
+- Quanto tempo a sessão fica válida antes do `auth status` voltar
+  `"logado": false` de novo (risco #2 da seção 11 do PLANO.md) — não dá pra
+  saber sem deixar passar o tempo real.
+- Se a sessão exportada (usada num Chromium diferente, headless) ainda é
+  aceita pelo portal, ou se ele nota a mudança de fingerprint/IP e desloga
+  (risco #3 da seção 2/11 do PLANO.md) — é o que decide se o modo container
+  sobrevive ou se o projeto fica só no modo local.

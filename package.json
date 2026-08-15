@@ -10,6 +10,7 @@
     "gerar:exemplo": "node scripts/gerar-exemplo.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:browser": "RUN_BROWSER_TESTS=1 vitest run src/driver/sessao.test.ts",
     "typecheck": "tsc"
   },
   "repository": {
