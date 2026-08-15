@@ -1,0 +1,14 @@
+{
+  "slug": "qara",
+  "cnpj": "44697695000188",
+  "razaoSocial": "QARA SERVICOS MEDICOS LTDA",
+  "regime": "simples-nacional",
+  "passo1": {
+    "regimeApuracaoSN": "1"
+  },
+  "passo3": {
+    "pisCofinsSituacaoTributaria": "7",
+    "pisCofinsTipoRetencao": "0",
+    "tipoValorTributos": "4"
+  }
+}

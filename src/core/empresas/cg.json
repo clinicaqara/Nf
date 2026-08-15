@@ -1,0 +1,19 @@
+{
+  "slug": "cg",
+  "cnpj": "66895057000104",
+  "razaoSocial": "CECCARELLI E GALVEZ SERVICOS MEDICOS",
+  "regime": "sociedade-de-profissionais",
+  "passo1": {},
+  "passo3": {
+    "issqnRegimeEspecial": "6",
+    "pisCofinsSituacaoTributaria": "1",
+    "pisCofinsTipoRetencao": "0",
+    "tipoValorTributos": "2",
+    "percentuais": {
+      "federal": "11,33",
+      "estadual": "0",
+      "municipal": "0"
+    }
+  },
+  "cepPadrao": "22041012"
+}

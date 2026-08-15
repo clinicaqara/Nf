@@ -1,0 +1,32 @@
+[
+  {
+    "codigo": "MIGUEL RJ",
+    "valorCentavos": 65000,
+    "descricaoTemplate": "CONSULTA REALIZADA COM DR. MIGUEL CECCARELLI, MÉDICO DERMATOLOGISTA CRM 520109245-6 - RQE 34414. Consulta realizada no dia {{data}}."
+  },
+  {
+    "codigo": "MIGUEL SP",
+    "valorCentavos": 80000,
+    "descricaoTemplate": "CONSULTA REALIZADA COM DR. MIGUEL CECCARELLI, MÉDICO DERMATOLOGISTA CRM 520109245-6 - RQE 34414. Consulta realizada no dia {{data}}."
+  },
+  {
+    "codigo": "DIEGO",
+    "valorCentavos": 45000,
+    "descricaoTemplate": "CONSULTA REALIZADA COM DR. DIEGO GALVEZ, MÉDICO DERMATOLOGISTA CRM-RJ 52-0112387-4 · RQE 57517. Consulta realizada no dia {{data}}."
+  },
+  {
+    "codigo": "PODOLOGIA",
+    "valorCentavos": 20000,
+    "descricaoTemplate": "SESSÃO DE DESBASTAMENTO DE UNHA"
+  },
+  {
+    "codigo": "1B",
+    "valorCentavos": 110000,
+    "descricaoTemplate": "TRATAMENTO REALIZADO COM DR. MIGUEL CECCARELLI, MÉDICO DERMATOLOGISTA CRM 520109245-6 - RQE 34414 - 4 SESSÕES DE DESBASTAMENTO (R$ 150,00 CADA) - 1 CONSULTA MÉDICA (R$ 500,00)"
+  },
+  {
+    "codigo": "2B",
+    "valorCentavos": 150000,
+    "descricaoTemplate": "TRATAMENTO REALIZADO COM DR. MIGUEL CECCARELLI, MÉDICO DERMATOLOGISTA CRM 520109245-6 - RQE 34414 - 4 SESSÕES DE DESBASTAMENTO COM ÓRTESE (R$ 250,00 CADA) - 1 CONSULTA MÉDICA (R$ 500,00)"
+  }
+]

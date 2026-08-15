@@ -189,11 +189,18 @@ nf conciliar --competencia 2026-08  compara ledger × portal, aponta divergênci
 nf relatorio --competencia 2026-08  XLSX por empresa para a contabilidade
 ```
 
-Formato da planilha (uma linha por nota, cabeçalho fixo):
-`empresa | data_atendimento | cpf | nome | cep | numero | codigo_servico | valor_centavos | observacao`
-— `nome` só é obrigatório nos casos sem CPF; `valor_centavos` só quando o
-código é `OUTROS`. `nf emitir` valida a planilha inteira **antes** de abrir o
-navegador e recusa o lote com a lista de erros por linha.
+Formato da planilha (uma linha por nota, cabeçalho fixo — implementado na
+Fase 2 em `src/cli/planilha.ts`):
+`empresa | data_atendimento | tipo_tomador | cpf | nome | nif | pais | cep | numero | codigo_servico | valor_centavos | observacao`
+
+`tipo_tomador` é opcional e assume `cpf` quando a coluna `cpf` vem
+preenchida; senão é obrigatório (`estrangeiro-residente` | `turista` |
+`nao-informado`) — é o que resolve os "Casos especiais — sem CPF" do
+Passo 1. `nome`/`nif`/`pais` só valem para os tipos sem CPF. `valor_centavos`
+e a descrição em `observacao` só são exigidos quando `codigo_servico =
+OUTROS`. `nf validar`/`nf emitir` validam a planilha inteira **antes** de
+abrir o navegador e apontam a lista de erros por linha (número da linha =
+o mesmo que aparece no Excel).
 
 ## 7. Fases
 
