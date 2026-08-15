@@ -1,0 +1,24 @@
+{
+  "name": "nf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "spike:cdp": "node scripts/spike-cdp.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clinicaqara/Nf.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/clinicaqara/Nf/issues"
+  },
+  "homepage": "https://github.com/clinicaqara/Nf#readme",
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
